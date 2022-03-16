@@ -1,2 +1,2 @@
 # MSP430Timer
-Library for Timing Events in MSP430 devices
+Library handling default timers (A & B) and RTCs on MSP430 devices.
