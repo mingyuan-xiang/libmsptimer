@@ -33,8 +33,8 @@
 /* Number of cycles to delay inside delay loops. */
 #define DELAY_CYCLES 15
 
-#define CHARGE_CYCLES 18
-#define DISCHARGE_CYCLES 23
+#define CHARGE_CYCLES 1000
+#define DISCHARGE_CYCLES 912
 
 #define CHARGE_EN 4, 1
 #define CHARGE_PIN 8, 1
@@ -45,6 +45,7 @@
 
 #endif
 
+#define CAPVREF 25
 #define MINDISCHARGE 5
 
 /* initilizes charging. */

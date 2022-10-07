@@ -13,21 +13,30 @@ static uint32_t sleep_timer_tick = 0;
 static uint16_t sleep_timer_last = 0;
 
 static uint16_t old_csctl2 = 0;
-void timers_init() {
+void timers_init()
+{
    lfxt_start(old_csctl2);
 }
 
-void timers_stop() {
+void timers_stop()
+{
    lfxt_stop(old_csctl2);
 }
 
 // Measures how long a function takes.
-static inline uint32_t _stop_watch_(stop_watch_fn fn, void *arg)
+static inline uint32_t _stop_watch_(stop_watch_fn fn, void *arg, bool aclk)
 {
    stop_watch_tick = 0;
 
-   // Timer sourced by AUX and interrupt setup
-   timer_setup_cont(STOPWATCH_TIMER, ACLK, 1, 1);
+   if (aclk)
+   {
+      // Timer sourced by AUX and interrupt setup
+      timer_setup_cont(STOPWATCH_TIMER, ACLK, 1, 1);
+   }
+   else
+   {
+      timer_setup_cont(STOPWATCH_TIMER, SMCLK, 1, 1);
+   }
    __enable_interrupt();
 
    // start the timer on continuous mode & run
@@ -40,7 +49,7 @@ static inline uint32_t _stop_watch_(stop_watch_fn fn, void *arg)
 
    // read the last count
    // this value is in lfxt clock cycles
-   uint32_t time = TA1R;
+   uint32_t time;
 
    time = (stop_watch_tick << 16) | TA1R;
 
@@ -51,27 +60,27 @@ static inline uint32_t _stop_watch_(stop_watch_fn fn, void *arg)
    return time;
 }
 
-uint32_t stop_watch_cycle(stop_watch_fn fn, void *arg)
+uint32_t stop_watch_cycle(stop_watch_fn fn, void *arg, bool aclk)
 {
-   return _stop_watch_(fn, arg);
+   return _stop_watch_(fn, arg, aclk);
 }
 
 uint32_t stop_watch_ms(stop_watch_fn fn, void *arg)
 {
-   uint32_t t = _stop_watch_(fn, arg);
+   uint32_t t = _stop_watch_(fn, arg, true);
 
    // turn into ms
    t *= 1000;
-   t /= 32768;
+   t = t >> 15;
    return t;
 }
 
-static inline void _sleep_timer_()
+static inline void _sleep_timer_(bool aclk)
 {
    if (sleep_timer_last == 0 && sleep_timer_tick == 0)
       return;
 
-   // Timer sourced by AUX and interrupt setup
+   // Timer sourced by ACLK and interrupt setup
    __enable_interrupt();
 
    if (sleep_timer_tick == 0)
@@ -87,7 +96,6 @@ static inline void _sleep_timer_()
 
    LPM1;
 
-
    _disable_interrupts();
    timer_halt(STOPWATCH_TIMER);
    timer_reset(STOPWATCH_TIMER);
@@ -97,12 +105,11 @@ static inline void _sleep_timer_()
    sleep_timer_tick = 0;
 }
 
-void sleep_timer_cycle(uint32_t end)
+void sleep_timer_cycle(uint32_t end, bool aclk)
 {
-
    sleep_timer_tick = end >> 16;
    sleep_timer_last = end & 0xFFFF;
-   _sleep_timer_();
+   _sleep_timer_(aclk);
 }
 
 void sleep_timer_ms(uint32_t end)
@@ -114,11 +121,58 @@ void sleep_timer_ms(uint32_t end)
 
    // // the rest should get translated into clock cycles
    end %= 2000;
-   end *= 32768;
+   end = end << 15;
    end /= 1000;
 
    sleep_timer_last = end;
-   _sleep_timer_();
+   _sleep_timer_(true);
+}
+void measure_freq_helper(void * arg) {
+   __delay_cycles(1002900);
+}
+
+/* Measures how many cycles a clock approximately takes in 1 second.
+ * c goes as follows,
+ *    1: DCO
+ *    2: MODCLK
+ *    3: LFMODCLK
+ *    4: LFXTCLK (calibrated based on this)
+ *    5: VLOCLK 
+ *    6: HFXTCLK
+ */
+uint32_t measure_freq(uint8_t c) {
+   uint16_t new, old;
+   uint32_t x = 0;
+   switch(c) {
+      case 1:
+         clock_src_update(DCOCLK, DCOCLK, VLOCLK, old);
+         x = stop_watch_cycle(measure_freq_helper, 0, false);
+         clock_src_update_all(old, new);
+         break;
+      case 2:
+         clock_src_update(DCOCLK, MODCLK, VLOCLK, old);
+         x = stop_watch_cycle(measure_freq_helper, 0, false);
+         clock_src_update_all(old, new);
+         break;
+      case 3:
+         clock_src_update(DCOCLK, MODCLK, LFMODCLK, old);
+         x = stop_watch_cycle(measure_freq_helper, 0, true);
+         clock_src_update_all(old, new);
+         break;
+      case 4:
+         timers_init();
+         x = stop_watch_cycle(measure_freq_helper, 0, true);
+         timers_stop();
+         break;
+      case 5:
+         clock_src_update(DCOCLK, MODCLK, VLOCLK, old);
+         x = stop_watch_cycle(measure_freq_helper, 0, true);
+         clock_src_update_all(old, new);
+         break;
+      default:
+         break;
+   }
+   return x;
 }
 
 void __attribute__((interrupt(STIC3(TIMER, STOPWATCH_TIMER, _A1_VECTOR)))) STIC3(TIMER, STOPWATCH_TIMER, _A1_ISR)(void)
@@ -185,6 +239,7 @@ void __attribute__((interrupt(STIC3(TIMER, SLEEP_TIMER, _A1_VECTOR)))) STIC3(TIM
    }
 }
 
-void __attribute__((interrupt(STIC3(TIMER, SLEEP_TIMER, _A0_VECTOR)))) STIC3(TIMER, SLEEP_TIMER, _A0_ISR)(void) {
+void __attribute__((interrupt(STIC3(TIMER, SLEEP_TIMER, _A0_VECTOR)))) STIC3(TIMER, SLEEP_TIMER, _A0_ISR)(void)
+{
    LPM1_EXIT;
 }
