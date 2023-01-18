@@ -96,10 +96,10 @@ static inline void _sleep_timer_(bool aclk)
 
    LPM1;
 
-   _disable_interrupts();
-   timer_halt(STOPWATCH_TIMER);
-   timer_reset(STOPWATCH_TIMER);
-   timer_CCIE_disable(STOPWATCH_TIMER);
+   // _disable_interrupts();
+   timer_halt(SLEEP_TIMER);
+   timer_reset(SLEEP_TIMER);
+   timer_CCIE_disable(SLEEP_TIMER);
 
    sleep_timer_last = 0;
    sleep_timer_tick = 0;
@@ -114,6 +114,7 @@ void sleep_timer_cycle(uint32_t end, bool aclk)
 
 void sleep_timer_ms(uint32_t end)
 {
+
    // Turn end from ms into a lfxt clock cycles
 
    // each 2000 ms, the clock incurr one tick, soo..
@@ -125,9 +126,12 @@ void sleep_timer_ms(uint32_t end)
    end /= 1000;
 
    sleep_timer_last = end;
+
    _sleep_timer_(true);
 }
-void measure_freq_helper(void * arg) {
+
+void measure_freq_helper(void *arg)
+{
    __delay_cycles(1002900);
 }
 
@@ -137,40 +141,42 @@ void measure_freq_helper(void * arg) {
  *    2: MODCLK
  *    3: LFMODCLK
  *    4: LFXTCLK (calibrated based on this)
- *    5: VLOCLK 
+ *    5: VLOCLK
  *    6: HFXTCLK
  */
-uint32_t measure_freq(uint8_t c) {
+uint32_t measure_freq(uint8_t c)
+{
    uint16_t new, old;
    uint32_t x = 0;
-   switch(c) {
-      case 1:
-         clock_src_update(DCOCLK, DCOCLK, VLOCLK, old);
-         x = stop_watch_cycle(measure_freq_helper, 0, false);
-         clock_src_update_all(old, new);
-         break;
-      case 2:
-         clock_src_update(DCOCLK, MODCLK, VLOCLK, old);
-         x = stop_watch_cycle(measure_freq_helper, 0, false);
-         clock_src_update_all(old, new);
-         break;
-      case 3:
-         clock_src_update(DCOCLK, MODCLK, LFMODCLK, old);
-         x = stop_watch_cycle(measure_freq_helper, 0, true);
-         clock_src_update_all(old, new);
-         break;
-      case 4:
-         timers_init();
-         x = stop_watch_cycle(measure_freq_helper, 0, true);
-         timers_stop();
-         break;
-      case 5:
-         clock_src_update(DCOCLK, MODCLK, VLOCLK, old);
-         x = stop_watch_cycle(measure_freq_helper, 0, true);
-         clock_src_update_all(old, new);
-         break;
-      default:
-         break;
+   switch (c)
+   {
+   case 1:
+      clock_src_update(DCOCLK, DCOCLK, VLOCLK, old);
+      x = stop_watch_cycle(measure_freq_helper, 0, false);
+      clock_src_update_all(old, new);
+      break;
+   case 2:
+      clock_src_update(DCOCLK, MODCLK, VLOCLK, old);
+      x = stop_watch_cycle(measure_freq_helper, 0, false);
+      clock_src_update_all(old, new);
+      break;
+   case 3:
+      clock_src_update(DCOCLK, MODCLK, LFMODCLK, old);
+      x = stop_watch_cycle(measure_freq_helper, 0, true);
+      clock_src_update_all(old, new);
+      break;
+   case 4:
+      timers_init();
+      x = stop_watch_cycle(measure_freq_helper, 0, true);
+      timers_stop();
+      break;
+   case 5:
+      clock_src_update(DCOCLK, MODCLK, VLOCLK, old);
+      x = stop_watch_cycle(measure_freq_helper, 0, true);
+      clock_src_update_all(old, new);
+      break;
+   default:
+      break;
    }
    return x;
 }
