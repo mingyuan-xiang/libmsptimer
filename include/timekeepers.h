@@ -2,6 +2,10 @@
 #define INCLUDE_TIMEKEEPER_H
 #include <stdint.h>
 
+// Adjust these if using a sleeper inside a stop watch while using smclk for stop watch.
+#define TIMEKEEPER_SLEEP LPM1;
+#define TIMEKEEPER_EXIT_SLEEP LPM1_EXIT;
+
 /* This library provides timekeeper functionlity as follows,
  *    stop_watch : measures how long a function takes using lfxt
  *                 accurate, but cannot be run intermittently
@@ -52,14 +56,31 @@ void sleep_timer_cycle(uint32_t end, bool aclk);
 
 void sleep_timer_ms(uint32_t end);
 
+/* Measures how many cycles the smclk takes in 32768 of LFXT clock cycles.
+ * To work needs timers init setup and smlk setup to desired clock.
+ * 
+ * In essence, this function runs a sleep timer with 32768 on the LFXT
+ * and uses a stop watch with the smlk. So in reality, the value returned
+ * is how long it took for the 32768 LFXT cycles to run + stopwatch DCO overhead.
+ * With DCO set to 1 MHz, this takes 3 LFXT cycles, approximately 0.1 ms or 
+ * 90-100 cycles.
+ * 
+ */
+uint32_t measure_smlk_cycles();
+
 /* Measures how many cycles a clock approximately takes in 1 second.
+ * To do so, it replaces the SMCLK with selected clk source and runs 
+ * lfxt for 32768 cycles. Similar to above, it has some small overhead, 
+ * about 0.1 ms or 90-100 DCO cycles on 1 MHz.
  * c goes as follows,
  *    1: DCO
- *    2: LFXTCLK (calibrated based on this)
- *    3: HFXTCLK 
+ *    2: MODCLK
+ *    3: LFMODCLK
  *    4: VLOCLK
- *    5: MODCLK
- *    6: LFMODCLK
+ *    5: LFXTCLK (calibrated based on this)
+ *    6: HFXTCLK
+ * 
+ * Assumes lfxtclk is setup by timers_init
  */
 uint32_t measure_freq(uint8_t c);
 

@@ -94,7 +94,7 @@ static inline void _sleep_timer_(bool aclk)
       timer_start_cont(SLEEP_TIMER);
    }
 
-   LPM1;
+   TIMEKEEPER_SLEEP;
 
    // _disable_interrupts();
    timer_halt(SLEEP_TIMER);
@@ -114,7 +114,6 @@ void sleep_timer_cycle(uint32_t end, bool aclk)
 
 void sleep_timer_ms(uint32_t end)
 {
-
    // Turn end from ms into a lfxt clock cycles
 
    // each 2000 ms, the clock incurr one tick, soo..
@@ -130,20 +129,18 @@ void sleep_timer_ms(uint32_t end)
    _sleep_timer_(true);
 }
 
-void measure_freq_helper(void *arg)
+static void _smlk_cycles_kernel(void *x)
 {
-   __delay_cycles(1002900);
+   sleep_timer_tick = 0;
+   sleep_timer_last = 32768;
+   _sleep_timer_(true);
 }
 
-/* Measures how many cycles a clock approximately takes in 1 second.
- * c goes as follows,
- *    1: DCO
- *    2: MODCLK
- *    3: LFMODCLK
- *    4: LFXTCLK (calibrated based on this)
- *    5: VLOCLK
- *    6: HFXTCLK
- */
+uint32_t measure_smlk_cycles()
+{
+   return stop_watch_cycle(_smlk_cycles_kernel, 0, false);
+}
+
 uint32_t measure_freq(uint8_t c)
 {
    uint16_t new, old;
@@ -151,29 +148,28 @@ uint32_t measure_freq(uint8_t c)
    switch (c)
    {
    case 1:
-      clock_src_update(DCOCLK, DCOCLK, VLOCLK, old);
-      x = stop_watch_cycle(measure_freq_helper, 0, false);
+      clock_src_update(DCOCLK, DCOCLK, LFXTCLK, old);
+      x = stop_watch_cycle(_smlk_cycles_kernel, 0, false);
       clock_src_update_all(old, new);
       break;
    case 2:
-      clock_src_update(DCOCLK, MODCLK, VLOCLK, old);
-      x = stop_watch_cycle(measure_freq_helper, 0, false);
+      clock_src_update(DCOCLK, MODCLK, LFXTCLK, old);
+      x = stop_watch_cycle(_smlk_cycles_kernel, 0, false);
       clock_src_update_all(old, new);
       break;
    case 3:
-      clock_src_update(DCOCLK, MODCLK, LFMODCLK, old);
-      x = stop_watch_cycle(measure_freq_helper, 0, true);
+      clock_src_update(DCOCLK, LFMODCLK, LFXTCLK, old);
+      x = stop_watch_cycle(_smlk_cycles_kernel, 0, false);
       clock_src_update_all(old, new);
       break;
    case 4:
-      timers_init();
-      x = stop_watch_cycle(measure_freq_helper, 0, true);
-      timers_stop();
+      clock_src_update(DCOCLK, VLOCLK, LFXTCLK, old);
+      x = stop_watch_cycle(_smlk_cycles_kernel, 0, false);
+      clock_src_update_all(old, new);
       break;
    case 5:
-      clock_src_update(DCOCLK, MODCLK, VLOCLK, old);
-      x = stop_watch_cycle(measure_freq_helper, 0, true);
-      clock_src_update_all(old, new);
+      x = stop_watch_cycle(_smlk_cycles_kernel, 0, true);
+      break;
       break;
    default:
       break;
@@ -231,7 +227,9 @@ void __attribute__((interrupt(STIC3(TIMER, SLEEP_TIMER, _A1_VECTOR)))) STIC3(TIM
       {
          // time's up
          if (sleep_timer_last == 0)
-            LPM1_EXIT;
+         {
+            TIMEKEEPER_EXIT_SLEEP;
+         }
          else
          {
             timer_IFG_disable(SLEEP_TIMER);
@@ -247,5 +245,5 @@ void __attribute__((interrupt(STIC3(TIMER, SLEEP_TIMER, _A1_VECTOR)))) STIC3(TIM
 
 void __attribute__((interrupt(STIC3(TIMER, SLEEP_TIMER, _A0_VECTOR)))) STIC3(TIMER, SLEEP_TIMER, _A0_ISR)(void)
 {
-   LPM1_EXIT;
+   TIMEKEEPER_EXIT_SLEEP;
 }
