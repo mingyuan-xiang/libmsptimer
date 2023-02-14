@@ -143,6 +143,9 @@ uint32_t measure_smlk_cycles()
 
 uint32_t measure_freq(uint8_t c)
 {
+   // This function is for diagnositcs mostly, so it's ok to have this 1 extra
+   // save function in there. It'll be fine.
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
    uint16_t new, old;
    uint32_t x = 0;
    switch (c)
