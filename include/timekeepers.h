@@ -3,8 +3,8 @@
 #include <stdint.h>
 
 // Adjust these if using a sleeper inside a stop watch while using smclk for stop watch.
-#define TIMEKEEPER_SLEEP LPM1;
-#define TIMEKEEPER_EXIT_SLEEP LPM1_EXIT;
+#define TIMEKEEPER_SLEEP LPM3;
+#define TIMEKEEPER_EXIT_SLEEP LPM3_EXIT;
 
 /* This library provides timekeeper functionlity as follows,
  *    stop_watch : measures how long a function takes using lfxt
