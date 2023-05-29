@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include <libmsptimer/timekeepers.h>
+#include <libmsptimer/timekeeper.h>
 
 static uint32_t stop_watch_tick = 0;
 static uint32_t sleep_timer_tick = 0;
