@@ -151,7 +151,6 @@ uint32_t measure_freq(uint8_t c) {
   case 5:
     x = stop_watch_cycle(_smlk_cycles_kernel, 0, true);
     break;
-    break;
   default:
     break;
   }
