@@ -53,6 +53,44 @@ static inline uint32_t _stop_watch_(stop_watch_fn fn, void *arg, bool aclk) {
   return time;
 }
 
+#ifdef CONFIG_TIMER_ALPACA
+TASK(CONFIG_TIMER_ALPACA, stop_watch_task);
+__nv task_t *stop_watch_task_todo;
+__nv uint32_t stop_watch_task_count;
+__nv unsigned int _int_state;
+void stop_watch_task() {
+  uint16_t state = CUR_SCRATCH[0];
+  if (state == 0) {
+    stop_watch_tick = 0;
+    timer_setup_cont(CONFIG_STOPWATCH_TIMER, ACLK, 1, 1);
+    _int_state = __get_interrupt_state();
+    stop_watch_task_todo->info.return_task = CUR_TASK;
+    scratch_bak[0] = 1;
+    write_to_gbuf((uint8_t *)scratch_bak, (uint8_t *)CUR_SCRATCH,
+                  sizeof(uint16_t));
+    __enable_interrupt();
+    timer_start_cont(CONFIG_STOPWATCH_TIMER);
+    transition_to(stop_watch_task_todo);
+  } else {
+    // disable the timer
+    timer_halt(CONFIG_STOPWATCH_TIMER);
+    __set_interrupt_state(_int_state);
+
+    // read the last count
+    // this value is in lfxt clock cycles
+    stop_watch_task_count = ((uint32_t)stop_watch_tick << 16) | TA1R;
+
+    timer_halt(CONFIG_STOPWATCH_TIMER);
+    timer_reset(CONFIG_STOPWATCH_TIMER);
+    timer_IFG_disable(CONFIG_STOPWATCH_TIMER);
+    scratch_bak[0] = 0;
+    write_to_gbuf((uint8_t *)scratch_bak, (uint8_t *)CUR_SCRATCH,
+                  sizeof(uint16_t));
+    transition_to(CUR_TASK->info.return_task);
+  }
+}
+#endif
+
 uint32_t stop_watch_cycle(stop_watch_fn fn, void *arg, bool aclk) {
   return _stop_watch_(fn, arg, aclk);
 }

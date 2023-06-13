@@ -34,6 +34,17 @@ typedef void (*stop_watch_fn)(void *);
 void timers_init();
 void timers_stop();
 
+/*
+ * Non intermittent safe alpaca task benchmarker
+ */
+#ifdef CONFIG_TIMER_ALPACA
+#include <libalpaca/alpaca.h>
+extern task_t *stop_watch_task_todo;
+extern uint32_t stop_watch_task_count;
+void stop_watch_task();
+extern TASK_DEC(stop_watch_task);
+#endif
+
 /* Measures how long a function takes with LFXTCLK for 1 operation.
  * fn should not use ACLK. ACLK & PJ.5-6 settings are altered
  * in this function.
