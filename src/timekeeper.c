@@ -83,10 +83,8 @@ void stop_watch_task() {
     timer_halt(CONFIG_STOPWATCH_TIMER);
     timer_reset(CONFIG_STOPWATCH_TIMER);
     timer_IFG_disable(CONFIG_STOPWATCH_TIMER);
-    scratch_bak[0] = 0;
-    write_to_gbuf((uint8_t *)scratch_bak, (uint8_t *)CUR_SCRATCH,
-                  sizeof(uint16_t));
-    transition_to(CUR_TASK->info.return_task);
+    setup_cleanup(CUR_TASK);
+    TRANSITION_TO(task_cleanup);
   }
 }
 #endif

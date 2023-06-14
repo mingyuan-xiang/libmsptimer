@@ -39,6 +39,7 @@ void timers_stop();
  */
 #ifdef CONFIG_TIMER_ALPACA
 #include <libalpaca/alpaca.h>
+#include <libalpaca/utility.h>
 extern task_t *stop_watch_task_todo;
 extern uint32_t stop_watch_task_count;
 void stop_watch_task();
