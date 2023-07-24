@@ -19,7 +19,6 @@ void timers_stop();
 
 /*
 * This function starts the timer.
-* @param aclk: if true, the timer is sourced by ACLK, otherwise by SMCLK
 */
 void start_timer();
 
@@ -28,5 +27,29 @@ void start_timer();
 * @return the number of clock cycles
 */
 uint32_t stop_timer();
+
+/*
+* The following two functions can prevent the compiler from optimizing the code
+* so that we will get wrong timing results, such as reordering the instructions
+* or removing the instructions.
+* Reference:
+*   + https://stackoverflow.com/a/38025837/13813036
+*   + https://www.youtube.com/watch?v=nXaxk27zwlk
+*/
+
+/*
+* This function prevents the compiler from removing the instructions.
+*/
+__inline__ void escape(void* p) {
+  __asm__ volatile("" : : "g"(p) : "memory");
+}
+
+/*
+* This is a memory barrier for the compiler that prevents the compiler from
+* reordering the instructions.
+*/
+__inline__ void clobber() {
+  __asm__ volatile("" : : : "memory");
+}
 
 #endif /* INCLUDE_TIMEKEEPER_H */

@@ -20,12 +20,6 @@ static unsigned int timer_int_state;
 void start_timer() {
   msp430_timer_tick = 0;
 
-//  if (aclk) {
-//    // Timer sourced by AUX and interrupt setup
-//    timer_setup_cont(CONFIG_STOPWATCH_TIMER, ACLK, 1, 1);
-//  } else {
-//    timer_setup_cont(CONFIG_STOPWATCH_TIMER, SMCLK, 1, 1);
-//  }
   /* The original code can choose ACLK and SMCLK, but always using ACLK is
   * stable and reasonable if there exists a crystal.
   */
@@ -36,9 +30,12 @@ void start_timer() {
 
   // start the timer on continuous mode & run
   timer_start_cont(CONFIG_STOPWATCH_TIMER);
+
+  clobber();
 }
 
 uint32_t stop_timer() {
+  clobber();
   // disable the timer
   timer_halt(CONFIG_STOPWATCH_TIMER);
   __set_interrupt_state(timer_int_state);
