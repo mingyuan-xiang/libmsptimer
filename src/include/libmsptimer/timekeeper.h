@@ -29,8 +29,8 @@ void start_timer();
 uint32_t stop_timer();
 
 /*
-* The following two functions can prevent the compiler from optimizing the code
-* so that we will get wrong timing results, such as reordering the instructions
+* The following two functions can prevent the compiler from optimizing some part of the
+* code so that we will get wrong timing results, such as reordering the instructions
 * or removing the instructions.
 * Reference:
 *   + https://stackoverflow.com/a/38025837/13813036
