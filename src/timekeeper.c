@@ -30,12 +30,9 @@ void start_timer() {
 
   // start the timer on continuous mode & run
   timer_start_cont(CONFIG_STOPWATCH_TIMER);
-
-  clobber();
 }
 
 uint32_t stop_timer() {
-  clobber();
   // disable the timer
   timer_halt(CONFIG_STOPWATCH_TIMER);
   __set_interrupt_state(timer_int_state);
