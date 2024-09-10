@@ -2,13 +2,12 @@
 #include <libmsp/gpio.h>
 #include <libmsp/timer.h>
 #include <libmspprintf/mspprintf.h>
+#include <libmsptimer/timekeeper.h>
 #include <msp430.h>
 #include <string.h>
 
 #include <stdbool.h>
 #include <stdint.h>
-
-#include <libmsptimer/timekeeper.h>
 
 static uint16_t old_csctl2 = 0;
 void timers_init() { lfxt_start(old_csctl2); }
