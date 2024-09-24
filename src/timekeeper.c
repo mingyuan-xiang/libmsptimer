@@ -49,6 +49,14 @@ uint32_t stop_timer() {
   return time;
 }
 
+uint32_t get_time() {
+  uint32_t time;
+
+  time = (msp430_timer_tick << 16) | TA1R;
+
+  return time;
+}
+
 void
     __attribute__((interrupt(STIC3(TIMER, CONFIG_STOPWATCH_TIMER, _A1_VECTOR))))
     STIC3(TIMER, CONFIG_STOPWATCH_TIMER, _A1_ISR)(void) {

@@ -28,4 +28,6 @@ void start_timer();
 */
 uint32_t stop_timer();
 
+uint32_t get_time();
+
 #endif /* INCLUDE_TIMEKEEPER_H */
